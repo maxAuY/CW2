@@ -73,4 +73,5 @@ if __name__ == '__main__':
     table[:,1] = times
 
     print(table)
+    
         
