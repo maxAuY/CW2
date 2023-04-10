@@ -20,6 +20,10 @@ from p1.low_level_environment import LowLevelEnvironment
 from p1.low_level_actions import LowLevelActionType
 from p1.low_level_policy_drawer import LowLevelPolicyDrawer
 
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.ticker import ScalarFormatter
+
 if __name__ == '__main__':
     airport_map, drawer_height = test_three_row_scenario()
     env = LowLevelEnvironment(airport_map)
@@ -42,8 +46,8 @@ if __name__ == '__main__':
     v_pe.update()  
     
     # Off policy MC predictors
-    
-    epsilon_b_values = [0.1, 0.2, 0.5, 1.0]
+    num_epsilons = 10
+    epsilon_b_values = [(i+1)/num_epsilons for i in range(num_epsilons)]
     
     num_values = len(epsilon_b_values)
     
@@ -61,6 +65,7 @@ if __name__ == '__main__':
         mc_drawers[i] = ValueFunctionDrawer(mc_predictors[i].value_function(), drawer_height)
         
     for e in range(100):
+        print(f'{e+1} / {100}')
         for i in range(num_values):
             mc_predictors[i].evaluate()
             mc_drawers[i].update()
@@ -68,3 +73,47 @@ if __name__ == '__main__':
     v_pe.save_screenshot("q1_c_truth_pe.pdf")
     for i in range(num_values):
         mc_drawers[i].save_screenshot(f"mc-off-{int(epsilon_b_values[i]*10):03}-pe.pdf")
+
+
+    def list_values(predictor):
+        all_values = []
+        for y in range(3):
+                for x in range(15):
+                    value = predictor._v._values[x,y]
+                    if not np.isnan(value): 
+                        if not value == 0:
+                            all_values.append(value)   
+        return all_values
+    
+    fig,ax = plt.subplots()
+    plot = {}
+    plot['truth'] = list_values(pe)
+    for i in range(num_values):
+        values = list_values(mc_predictors[i])
+        plot[epsilon_b_values[i]] = values
+
+    width = 1/(2+num_values)
+    ind = np.arange(len(plot['truth']))
+    bar = 0
+    for epsilon in plot:
+        data = plot[epsilon]
+        if isinstance(epsilon,int):
+            epsilon = round(epsilon,2)
+        ax.bar(ind+width*bar,data,width,label=epsilon)
+        bar += 1
+
+    ax.set_ylabel('Value',fontsize = 25)
+    ax.set_xlabel('Cell',fontsize=25)
+    ax.set_title('Value Functions',fontsize = 30)
+
+    plt.rc('xtick', labelsize=30)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=30)    # fontsize of the tick labels
+    plt.rc('legend', fontsize=30)    # legend fontsize
+
+    plt.yticks(fontsize=20)
+    plt.xticks(fontsize=20)
+    ax.legend(loc='best')
+    y_formatter = ScalarFormatter(useOffset=True)
+    ax.yaxis.set_major_formatter(y_formatter)
+    plt.show()
+
