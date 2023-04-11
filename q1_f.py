@@ -20,6 +20,13 @@ from p1.low_level_environment import LowLevelEnvironment
 from p1.low_level_actions import LowLevelActionType
 from p1.low_level_policy_drawer import LowLevelPolicyDrawer
 
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+
+np.random.seed(42)
+random.seed(42)
+
 if __name__ == '__main__':
     airport_map, drawer_height = test_three_row_scenario()
     env = LowLevelEnvironment(airport_map)
@@ -55,11 +62,17 @@ if __name__ == '__main__':
         td_predictors[i].set_target_policy(pi)
         td_drawers[i] = ValueFunctionDrawer(td_predictors[i].value_function(), drawer_height)
         
-    for e in range(400):
-        print(e)
+    episodes = 400
+    convergence = {}
+    cell = (13,0) # cell to evaluate convergence at
+    for i in range(num_values):
+        convergence[i] = []
+    for e in range(episodes):
+        print(f'{e+1} / {episodes}')
         for i in range(num_values):
             td_predictors[i].evaluate()
-            td_drawers[i].update()        
+            td_drawers[i].update()
+            convergence[i].append(td_predictors[i]._v.value(cell[0],cell[1]))        
 
     v_pe.save_screenshot("truth_pe.pdf")
     
@@ -67,4 +80,16 @@ if __name__ == '__main__':
         td_drawers[i].update()
         td_drawers[i].save_screenshot(f"td-{int(alpha_values[i]*10):03}-pe.pdf")
     
-    
+    fig,ax = plt.subplots()
+    for i in [0,2,4,6]:#range(num_values):
+        ax.plot(convergence[i],label=alpha_values[i])
+
+    ax.set_title('TD Algorithm Convergence')
+    ax.set_xlabel('Episode number',fontsize=30)
+    ax.set_ylabel(f'Value at cell {cell}',fontsize=30)
+    ax.set_title('Value Functions',fontsize = 30)
+
+    plt.yticks(fontsize=20)
+    plt.xticks(fontsize=20)
+    ax.legend(loc='best',fontsize=30)
+    plt.show()

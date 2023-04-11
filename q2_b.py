@@ -24,7 +24,7 @@ from p1.low_level_actions import LowLevelActionType
 from p1.low_level_policy_drawer import LowLevelPolicyDrawer
 
 if __name__ == '__main__':
-    airport_map, drawer_height = test_2x2_scenario()
+    airport_map, drawer_height = test_3x3_scenario()
 
     # Show the scenario        
     airport_map_drawer = AirportMapDrawer(airport_map, drawer_height)

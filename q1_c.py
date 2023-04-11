@@ -22,7 +22,11 @@ from p1.low_level_policy_drawer import LowLevelPolicyDrawer
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
+
+import random
+
+np.random.seed(42)
+random.seed(42)
 
 if __name__ == '__main__':
     airport_map, drawer_height = test_three_row_scenario()
@@ -64,8 +68,9 @@ if __name__ == '__main__':
         mc_predictors[i].set_experience_replay_buffer_size(64)
         mc_drawers[i] = ValueFunctionDrawer(mc_predictors[i].value_function(), drawer_height)
         
-    for e in range(100):
-        print(f'{e+1} / {100}')
+    episodes = 10
+    for e in range(episodes):
+        print(f'{e+1} / {episodes}')
         for i in range(num_values):
             mc_predictors[i].evaluate()
             mc_drawers[i].update()
@@ -93,12 +98,12 @@ if __name__ == '__main__':
         plot[epsilon_b_values[i]] = values
 
     width = 1/(2+num_values)
-    ind = np.arange(len(plot['truth']))
     bar = 0
     for epsilon in plot:
         data = plot[epsilon]
         if isinstance(epsilon,int):
             epsilon = round(epsilon,2)
+        ind = np.arange(len(plot[epsilon]))
         ax.bar(ind+width*bar,data,width,label=epsilon)
         bar += 1
 
@@ -106,14 +111,7 @@ if __name__ == '__main__':
     ax.set_xlabel('Cell',fontsize=25)
     ax.set_title('Value Functions',fontsize = 30)
 
-    plt.rc('xtick', labelsize=30)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=30)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=30)    # legend fontsize
-
     plt.yticks(fontsize=20)
     plt.xticks(fontsize=20)
-    ax.legend(loc='best')
-    y_formatter = ScalarFormatter(useOffset=True)
-    ax.yaxis.set_major_formatter(y_formatter)
+    ax.legend(loc='best',fontsize=30)
     plt.show()
-

@@ -23,7 +23,13 @@ from p1.low_level_environment import LowLevelEnvironment
 from p1.low_level_actions import LowLevelActionType
 from p1.low_level_policy_drawer import LowLevelPolicyDrawer
 
+import random
+import matplotlib.pyplot as plt
+
 if __name__ == '__main__':
+    np.random.seed(52)
+    random.seed(52)
+
     airport_map, drawer_height = corridor_scenario()
 
     # Show the scenario        
@@ -38,6 +44,7 @@ if __name__ == '__main__':
     
     # Select the controller
     policy_learner = QLearner(env)   
+    policy_learner._replays_per_update = 0
     policy_learner.set_initial_policy(pi)
 
     # These values worked okay for me.
@@ -51,27 +58,58 @@ if __name__ == '__main__':
     
     times = []
     epsilons = []
-    episodes = 40
-    for i in range(episodes):
+    iterations = 40
+    avg_ep_lengths = []
+
+    for i in range(iterations):
         print(i)
+        pi.set_epsilon(1/math.sqrt(1+0.25*i))
 
         start_time = time.time() # start timing
-        policy_learner.find_policy()
+        avg_ep_length = policy_learner.find_policy()
         end_time = time.time() # stop timing
 
         value_function_drawer.update()
         greedy_optimal_policy_drawer.update()
-        pi.set_epsilon(1/math.sqrt(1+0.25*i))
-        print(f"epsilon={1/math.sqrt(1+i)};alpha={policy_learner.alpha()}")
+        
+        # print(f"epsilon={1/math.sqrt(1+i)};alpha={policy_learner.alpha()}")
 
         # track times and epsilons
-        epsilons.append(1/math.sqrt(1+i))
+        epsilon = pi._epsilon
+        epsilons.append(epsilon)
         times.append(end_time-start_time)
+        avg_ep_lengths.append(avg_ep_length)
 
-    table = np.zeros((episodes,2))
+    table = np.zeros((iterations,3))
     table[:,0] = epsilons
     table[:,1] = times
+    table[:,2] = avg_ep_lengths
 
     print(table)
     
+    i = 0
+    d = 4
+    x = epsilons[i:]
+    y = times[i:]
+    for degree in range(1,d+1):
+        plt.scatter(x,y)
+        plt.title('Time vs Epsilon',fontsize=30)
+        plt.plot(np.unique(x), np.poly1d(np.polyfit(x, y, degree))(np.unique(x)))
+        plt.xlabel('Epsilon',fontsize=30)
+        plt.ylabel('Time [s]',fontsize=30)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.show()
+
+    x = avg_ep_lengths[i:]
+    y = times[i:]
+    for degree in range(1,d+1):
+        plt.scatter(x,y)
+        plt.title('Time vs average episode length',fontsize=30)
+        plt.plot(np.unique(x), np.poly1d(np.polyfit(x, y, degree))(np.unique(x)))
+        plt.xlabel('Average episode length',fontsize=30)
+        plt.ylabel('Time [s]',fontsize=30)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.show()
         

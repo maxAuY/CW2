@@ -22,9 +22,12 @@ from p1.low_level_policy_drawer import LowLevelPolicyDrawer
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-from matplotlib.ticker import ScalarFormatter
+import random
 
 if __name__ == '__main__':
+    np.random.seed(42)
+    random.seed(42)
+                    
     airport_map, drawer_height = test_three_row_scenario()
     env = LowLevelEnvironment(airport_map)
     env.set_nominal_direction_probability(0.8)
@@ -42,33 +45,33 @@ if __name__ == '__main__':
     pe.evaluate()
     v_pe.update()  
     v_pe.update()  
+
+    # On policy MC predictor
+    mcpp = OnPolicyMCPredictor(env)
+    mcpp.set_target_policy(pi)
+    mcpp.set_experience_replay_buffer_size(64)
+    
+    # Q1b: Experiment with this value
+    first_visit = False
+    mcpp.set_use_first_visit(first_visit)
+    
+    v_mcpp = ValueFunctionDrawer(mcpp.value_function(), drawer_height)
+    
+    # Off policy MC predictor
+    mcop = OffPolicyMCPredictor(env)
+    mcop.set_target_policy(pi)
+    mcop.set_experience_replay_buffer_size(64)
+    b = env.initial_policy()
+    b.set_epsilon(0.2)
+    mcop.set_behaviour_policy(b)
+    
+    # Q1b: Experiment with this value
+    mcop.set_use_first_visit(first_visit)
+
+    v_mcop = ValueFunctionDrawer(mcop.value_function(), drawer_height)
     
     run_variance = False
-    if run_variance:
-        # On policy MC predictor
-        mcpp = OnPolicyMCPredictor(env)
-        mcpp.set_target_policy(pi)
-        mcpp.set_experience_replay_buffer_size(64)
-        
-        # Q1b: Experiment with this value
-        first_visit = True
-        mcpp.set_use_first_visit(first_visit)
-        
-        v_mcpp = ValueFunctionDrawer(mcpp.value_function(), drawer_height)
-        
-        # Off policy MC predictor
-        mcop = OffPolicyMCPredictor(env)
-        mcop.set_target_policy(pi)
-        mcop.set_experience_replay_buffer_size(64)
-        b = env.initial_policy()
-        b.set_epsilon(0.2)
-        mcop.set_behaviour_policy(b)
-        
-        # Q1b: Experiment with this value
-        mcop.set_use_first_visit(first_visit)
-
-        v_mcop = ValueFunctionDrawer(mcop.value_function(), drawer_height)
-            
+    if run_variance:            
         # iterating to find variance
         def get_final_variance(predictor):
             all_values = []
@@ -81,7 +84,7 @@ if __name__ == '__main__':
             variance = np.var(all_values)
             return variance
             
-        iterations = 2
+        iterations = 100
         no_episodes = 100
         on_variances = []
         off_variances = []
@@ -126,100 +129,148 @@ if __name__ == '__main__':
             variance = get_final_variance(mcop)
             off_variances.append(variance)
 
-        avg_time_op = np.average(onp_times)
-        avg_time_off_policy = np.average(offp_times)
-        avg_variance_on = np.average(on_variances)
-        avg_variance_off = np.average(off_variances)
-        print()
-        print('first visit:',first_visit)
-        print('avg on variance',avg_variance_on)
-        print('avg off variance',avg_variance_off)
-        print('avg_time on policy',avg_time_op*no_episodes,'s')
-        print('avg_time off policy',avg_time_off_policy*no_episodes,'s')
-        print()
+            avg_time_op = np.average(onp_times)
+            avg_time_off_policy = np.average(offp_times)
+            avg_variance_on = np.average(on_variances)
+            avg_variance_off = np.average(off_variances)
+            print()
+            print('first visit:',first_visit)
+            print('avg on variance',avg_variance_on)
+            print('avg off variance',avg_variance_off)
+            print('avg_time on policy',avg_time_op*no_episodes,'s')
+            print('avg_time off policy',avg_time_off_policy*no_episodes,'s')
+            print()
 
         # Sample way to generate outputs    
         v_pe.save_screenshot("q1_b_truth_pe.pdf")
         v_mcop.save_screenshot("q1_b_mc-off_pe.pdf")
         v_mcpp.save_screenshot("q1_b_mc-on_pe.pdf")
 
+    run_graphing = False
 
-    # create graphs for on or off policy
-    def list_values(predictor):
-        all_values = []
-        for y in range(3):
-                for x in range(15):
-                    value = predictor._v._values[x,y]
-                    if not np.isnan(value): 
-                        if not value == 0:
-                            all_values.append(value)   
-        return all_values
+    if run_graphing:
+        # create 1st and every visit graphs for on or off policy
+        def list_values(predictor):
+            all_values = []
+            for y in range(3):
+                    for x in range(15):
+                        value = predictor._v.value(x,y)
+                        if not np.isnan(value): 
+                            if not value == 0:
+                                all_values.append(value)   
+            return all_values
 
-    on_policy = False # set on or off policy graphing
-    no_episodes = 100
-    first_visit = [True,False]
-    policy_predictors = [None,None]
-    for i in range(2):
-        visit = first_visit[i]
+        on_policy = False # set on or off policy graphing
+        no_episodes = 100
+        first_visit = [True,False]
+        policy_predictors = [None,None]
+        convergence = {}
+        mean_squared_error = {}
 
         if on_policy:
-            # On policy MC predictor
-            policy_predictors[i] = OnPolicyMCPredictor(env)
-            policy_predictors[i].set_target_policy(pi)
-            policy_predictors[i].set_experience_replay_buffer_size(64)
-            
-            # Q1b: Experiment with this value
-            policy_predictors[i].set_use_first_visit(visit)
+            title = 'On Policy'
         else:
-            # Off policy MC predictor
-            policy_predictors[i] = OffPolicyMCPredictor(env)
-            policy_predictors[i].set_target_policy(pi)
-            policy_predictors[i].set_experience_replay_buffer_size(64)
-            b = env.initial_policy()
-            b.set_epsilon(0.2)
-            policy_predictors[i].set_behaviour_policy(b)
+            title = 'Off Policy'
 
-        for e in range(no_episodes):
-            policy_predictors[i].evaluate()
-            policy_predictors[i].evaluate()
+        def calc_mean_squared_error(v1,v2):
+            return 1/2*(v1-v2)**2
 
-    fig,ax = plt.subplots()
-    plot = {}
-    plot['truth'] = list_values(pe)
-    for i in range(2):
-        values = list_values(policy_predictors[i])
-        plot[first_visit[i]] = values
+        cell = (13,1)
+        for i in first_visit:
+            convergence[i] = []
+            mean_squared_error[i] = []
+        for i in range(2):
+            visit = first_visit[i]
 
-    width = 0.25
-    ind = np.arange(len(plot['truth']))
-    bar = 0
-    for visit in plot:
-        data = plot[visit]
-        if visit:
-            label = 'first visit'
-        else:
-            label = 'every visit'
-        if visit == 'truth':
-            label = visit
-        ax.bar(ind+width*bar,data,width,label=label)
-        bar += 1
+            if on_policy:
+                # On policy MC predictor
+                policy_predictors[i] = OnPolicyMCPredictor(env)
+                policy_predictors[i].set_target_policy(pi)
+                policy_predictors[i].set_experience_replay_buffer_size(64)
+                
+                # Q1b: Experiment with this value
+                policy_predictors[i].set_use_first_visit(visit)
+            else:
+                # Off policy MC predictor
+                policy_predictors[i] = OffPolicyMCPredictor(env)
+                policy_predictors[i].set_target_policy(pi)
+                policy_predictors[i].set_experience_replay_buffer_size(64)
+                b = env.initial_policy()
+                b.set_epsilon(0.2)
+                policy_predictors[i].set_behaviour_policy(b)
 
-    ax.set_ylabel('Value',fontsize=25)
-    ax.set_xlabel('Cell',fontsize=25)
+            for e in range(no_episodes):
+                print(f'{e} / {no_episodes}')
+                policy_predictors[i].evaluate()
+                cell_value = policy_predictors[i]._v.value(cell[0],cell[1])
+                convergence[i].append(cell_value)
+                mse = calc_mean_squared_error(cell_value,pe._v.value(cell[0],cell[1]))
+                mean_squared_error[i].append(mse)
 
-    if on_policy:
-        title = 'On Policy'
-    else:
-        title = 'Off Policy'
-    ax.set_title(f'{title} Value Functions',fontsize = 30)
+        fig1,ax1 = plt.subplots()
+        plot = {}
+        plot['truth'] = list_values(pe)
+        for i in range(2):
+            values = list_values(policy_predictors[i])
+            plot[first_visit[i]] = values
 
-    plt.rc('xtick', labelsize=30)    # fontsize of the tick labels
-    plt.rc('ytick', labelsize=30)    # fontsize of the tick labels
-    plt.rc('legend', fontsize=30)    # legend fontsize
+        width = 0.25
+        bar = 0
+        for visit in plot:
+            data = plot[visit]
+            if visit:
+                label = 'first visit'
+            else:
+                label = 'every visit'
+            if visit == 'truth':
+                label = visit
+            ind = np.arange(len(plot[visit]))
+            ax1.bar(ind+width*bar,data,width,label=label)
+            bar += 1
 
-    plt.yticks(fontsize=20)
-    plt.xticks(fontsize=20)
-    ax.legend(loc='best')
-    y_formatter = ScalarFormatter(useOffset=True)
-    ax.yaxis.set_major_formatter(y_formatter)
-    plt.show()
+        ax1.set_ylabel('Value',fontsize=25)
+        ax1.set_xlabel('Cell',fontsize=25)
+        ax1.set_title(f'{title} Value Functions',fontsize = 30)
+
+        plt.yticks(fontsize=20)
+        plt.xticks(fontsize=20)
+        ax1.legend(loc='best',fontsize=30)
+        plt.show()
+
+        # plot convergence
+        fig2,ax2 = plt.subplots()
+        for i in range(2):
+            if first_visit[i]:
+                label = 'first visit'
+            else:
+                label = 'every visit'
+            ax2.plot(convergence[i],label=label)
+        real_value = pe._v.value(cell[0],cell[1])*np.ones((len(mean_squared_error[i])))
+        ax2.plot(real_value,label='real value')
+        ax2.set_title(f'MC Algorithm Convergence {title}')
+        ax2.set_xlabel('Episode number',fontsize=30)
+        ax2.set_ylabel(f'Value at cell {cell}',fontsize=30)
+        ax2.set_title(f'Value Functions {title}',fontsize = 30)
+
+        plt.yticks(fontsize=20)
+        plt.xticks(fontsize=20)
+        ax2.legend(loc='best',fontsize=30)
+        plt.show()
+
+        # plot convergence
+        fig3,ax3 = plt.subplots()
+        for i in range(2):
+            if first_visit[i]:
+                label = 'first visit'
+            else:
+                label = 'every visit'
+            ax3.plot(mean_squared_error[i],label=label)
+
+        ax3.set_title(f'MC Algorithm MSE Comparison {title}',fontsize=30)
+        ax3.set_xlabel('Episode number',fontsize=30)
+        ax3.set_ylabel(f'MSE at cell {cell}',fontsize=30)
+
+        plt.yticks(fontsize=20)
+        plt.xticks(fontsize=20)
+        ax3.legend(loc='best',fontsize=30)
+        plt.show()
