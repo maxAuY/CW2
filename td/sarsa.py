@@ -26,18 +26,7 @@ class SARSA(TDController):
         self._pi.set_name("SARSA Greedy Policy")
                     
     def _update_action_and_value_functions_from_episode(self, episode):
-        
-        # Q2g:
-        # Complete implementation of this method
-        # Each time you update the state value function, you will need to make a
-        # call of the form:
-        #
-        # self._update_q_and_policy(coords, a, new_q) 
-        #
-        # This calls a method in the TDController which will update the
-        # Q value estimate in the base class and will update
-        # the greedy policy and estimated state value function
-        
+    
         steps = episode.number_of_steps()
         for step in range(steps-1):
             # extract information from step

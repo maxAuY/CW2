@@ -49,13 +49,6 @@ class TDPolicyPredictor(TDAlgorithmBase):
             
     def _update_value_function_from_episode(self, episode):
 
-        # Q1e:
-        # Complete implementation of this method
-        # Each time you update the state value function, you will need to make a
-        # call of the form:
-        #
-        # self._v.set_value(x_cell_coord, y_cell_coord, new_v)
-
         steps = episode.number_of_steps()
         for step in range(steps-1):
             # extract information from step

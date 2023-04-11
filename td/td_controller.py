@@ -49,6 +49,7 @@ class TDController(TDAlgorithmBase):
         # of running it MC-like. 
         episode_sampler = EpisodeSampler(self._environment)
         
+        episode_lengths = []
         for episode in range(self._number_of_episodes):
 
             # Choose the start for the episode            
@@ -56,6 +57,7 @@ class TDController(TDAlgorithmBase):
             self._environment.reset(start_x)
             
             # Sample the episode
+            
             new_episode = episode_sampler.sample_episode(self._pi, start_x, start_a)
 
             # If we didn't reach a terminal state, the 
@@ -72,6 +74,9 @@ class TDController(TDAlgorithmBase):
                 self._update_action_and_value_functions_from_episode(episode)
                 
             self._add_episode_to_experience_replay_buffer(new_episode)
+            episode_lengths.append(new_episode.number_of_steps())
+        avg_ep_length = np.average(episode_lengths)
+        return avg_ep_length
         
     def _update_action_and_value_functions_from_episode(self, episode):
         raise NotImplementedError()
