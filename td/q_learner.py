@@ -48,7 +48,7 @@ class QLearner(TDController):
             next_q = self._Q[n_x, n_y, :]
             max_next_q = max(next_q)
             
-            if step == steps - 2: # terminal step has a terminating value equal to its reward
+            if next_state.is_terminal(): # terminal step has a terminating value equal to its reward
                 max_next_q = episode.reward(step+1)
 
             # calculate new q

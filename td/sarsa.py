@@ -43,7 +43,7 @@ class SARSA(TDController):
             n_x,n_y = next_xy[0],next_xy[1]
             next_q = self._Q[n_x,n_y,next_action]
             
-            if step == steps - 2: # terminal step has a terminating value equal to its reward
+            if next_state.is_terminal(): # terminal step has a terminating value equal to its reward
                 next_q = episode.reward(step+1)
 
             # calculate new q
