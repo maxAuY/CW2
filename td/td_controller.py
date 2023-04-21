@@ -42,6 +42,13 @@ class TDController(TDAlgorithmBase):
         
     def policy(self):
         return self._pi
+    
+    def sum_rewards(self,episode):
+        'computes the sum of rewards for an episode, including last reward'
+        total_reward = 0
+        for step in range(episode.number_of_steps()):
+            total_reward += episode.reward(step)
+        return total_reward
 
     def find_policy(self):
         
@@ -50,6 +57,7 @@ class TDController(TDAlgorithmBase):
         episode_sampler = EpisodeSampler(self._environment)
         
         episode_lengths = []
+        episode_rewards = []
         for episode in range(self._number_of_episodes):
 
             # Choose the start for the episode            
@@ -65,6 +73,10 @@ class TDController(TDAlgorithmBase):
             if new_episode.terminated_successfully() is False:
                 continue
             
+            # calculatle total reward for successful episode
+            reward = self.sum_rewards(new_episode)
+            episode_rewards.append(reward)
+
             # Update with the current episode
             self._update_action_and_value_functions_from_episode(new_episode)
             
@@ -75,8 +87,11 @@ class TDController(TDAlgorithmBase):
                 
             self._add_episode_to_experience_replay_buffer(new_episode)
             episode_lengths.append(new_episode.number_of_steps())
+            
+        # find average length and reward of all episodes in iteration
         avg_ep_length = np.average(episode_lengths)
-        return avg_ep_length
+        avg_ep_reward = np.average(episode_rewards)
+        return avg_ep_length, avg_ep_reward
         
     def _update_action_and_value_functions_from_episode(self, episode):
         raise NotImplementedError()
