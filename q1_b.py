@@ -25,8 +25,8 @@ import time
 import random
 
 if __name__ == '__main__':
-    np.random.seed(42)
-    random.seed(42)
+    # np.random.seed(42)
+    # random.seed(42)
                     
     airport_map, drawer_height = test_three_row_scenario()
     env = LowLevelEnvironment(airport_map)
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     mcpp.set_experience_replay_buffer_size(64)
     
     # Q1b: Experiment with this value
-    first_visit = False
+    first_visit = True
     mcpp.set_use_first_visit(first_visit)
     
     v_mcpp = ValueFunctionDrawer(mcpp.value_function(), drawer_height)
@@ -146,22 +146,22 @@ if __name__ == '__main__':
         v_mcop.save_screenshot("q1_b_mc-off_pe.pdf")
         v_mcpp.save_screenshot("q1_b_mc-on_pe.pdf")
 
-    run_graphing = False
+    run_graphing = True
 
     if run_graphing:
         # create 1st and every visit graphs for on or off policy
-        def list_values(predictor):
+        def list_values(predictor,airport_map):
             all_values = []
-            for y in range(3):
-                    for x in range(15):
-                        value = predictor._v.value(x,y)
+            for y in range(airport_map._height):
+                    for x in range(airport_map._width):
+                        value = predictor._v._values[x,y]
                         if not np.isnan(value): 
                             if not value == 0:
                                 all_values.append(value)   
             return all_values
 
         on_policy = False # set on or off policy graphing
-        no_episodes = 100
+        no_episodes = 1000
         first_visit = [True,False]
         policy_predictors = [None,None]
         convergence = {}
@@ -186,7 +186,7 @@ if __name__ == '__main__':
                 # On policy MC predictor
                 policy_predictors[i] = OnPolicyMCPredictor(env)
                 policy_predictors[i].set_target_policy(pi)
-                policy_predictors[i].set_experience_replay_buffer_size(64)
+                policy_predictors[i].set_experience_replay_buffer_size(5)
                 
                 # Q1b: Experiment with this value
                 policy_predictors[i].set_use_first_visit(visit)
@@ -194,7 +194,7 @@ if __name__ == '__main__':
                 # Off policy MC predictor
                 policy_predictors[i] = OffPolicyMCPredictor(env)
                 policy_predictors[i].set_target_policy(pi)
-                policy_predictors[i].set_experience_replay_buffer_size(64)
+                policy_predictors[i].set_experience_replay_buffer_size(5)
                 b = env.initial_policy()
                 b.set_epsilon(0.2)
                 policy_predictors[i].set_behaviour_policy(b)
@@ -207,11 +207,12 @@ if __name__ == '__main__':
                 mse = calc_mean_squared_error(cell_value,pe._v.value(cell[0],cell[1]))
                 mean_squared_error[i].append(mse)
 
+        # plot bar graphs
         fig1,ax1 = plt.subplots()
         plot = {}
-        plot['truth'] = list_values(pe)
+        plot['truth'] = list_values(pe,airport_map)
         for i in range(2):
-            values = list_values(policy_predictors[i])
+            values = list_values(policy_predictors[i],airport_map)
             plot[first_visit[i]] = values
 
         width = 0.25
@@ -228,6 +229,11 @@ if __name__ == '__main__':
             ax1.bar(ind+width*bar,data,width,label=label)
             bar += 1
 
+        error_1st_visit = sum(abs(np.array(plot[True])-np.array(plot['truth'])))
+        error_every_visit = sum(abs(np.array(plot[False])-np.array(plot['truth'])))
+        print('first visit error:',error_1st_visit)
+        print('every visit error:',error_every_visit)
+
         ax1.set_ylabel('Value',fontsize=25)
         ax1.set_xlabel('Cell',fontsize=25)
         ax1.set_title(f'{title} Value Functions',fontsize = 30)
@@ -237,40 +243,42 @@ if __name__ == '__main__':
         ax1.legend(loc='best',fontsize=30)
         plt.show()
 
-        # plot convergence
-        fig2,ax2 = plt.subplots()
-        for i in range(2):
-            if first_visit[i]:
-                label = 'first visit'
-            else:
-                label = 'every visit'
-            ax2.plot(convergence[i],label=label)
-        real_value = pe._v.value(cell[0],cell[1])*np.ones((len(mean_squared_error[i])))
-        ax2.plot(real_value,label='real value')
-        ax2.set_title(f'MC Algorithm Convergence {title}')
-        ax2.set_xlabel('Episode number',fontsize=30)
-        ax2.set_ylabel(f'Value at cell {cell}',fontsize=30)
-        ax2.set_title(f'Value Functions {title}',fontsize = 30)
+        plot_convergence = False
+        if plot_convergence:
+            # plot convergence
+            fig2,ax2 = plt.subplots()
+            for i in range(2):
+                if first_visit[i]:
+                    label = 'first visit'
+                else:
+                    label = 'every visit'
+                ax2.plot(convergence[i],label=label)
+            real_value = pe._v.value(cell[0],cell[1])*np.ones((len(mean_squared_error[i])))
+            ax2.plot(real_value,label='real value')
+            ax2.set_title(f'MC Algorithm Convergence {title}')
+            ax2.set_xlabel('Episode number',fontsize=30)
+            ax2.set_ylabel(f'Value at cell {cell}',fontsize=30)
+            ax2.set_title(f'Value Functions {title}',fontsize = 30)
 
-        plt.yticks(fontsize=20)
-        plt.xticks(fontsize=20)
-        ax2.legend(loc='best',fontsize=30)
-        plt.show()
+            plt.yticks(fontsize=20)
+            plt.xticks(fontsize=20)
+            ax2.legend(loc='best',fontsize=30)
+            plt.show()
 
-        # plot convergence
-        fig3,ax3 = plt.subplots()
-        for i in range(2):
-            if first_visit[i]:
-                label = 'first visit'
-            else:
-                label = 'every visit'
-            ax3.plot(mean_squared_error[i],label=label)
+            # plot convergence
+            fig3,ax3 = plt.subplots()
+            for i in range(2):
+                if first_visit[i]:
+                    label = 'first visit'
+                else:
+                    label = 'every visit'
+                ax3.plot(mean_squared_error[i],label=label)
 
-        ax3.set_title(f'MC Algorithm MSE Comparison {title}',fontsize=30)
-        ax3.set_xlabel('Episode number',fontsize=30)
-        ax3.set_ylabel(f'MSE at cell {cell}',fontsize=30)
+            ax3.set_title(f'MC Algorithm MSE Comparison {title}',fontsize=30)
+            ax3.set_xlabel('Episode number',fontsize=30)
+            ax3.set_ylabel(f'MSE at cell {cell}',fontsize=30)
 
-        plt.yticks(fontsize=20)
-        plt.xticks(fontsize=20)
-        ax3.legend(loc='best',fontsize=30)
-        plt.show()
+            plt.yticks(fontsize=20)
+            plt.xticks(fontsize=20)
+            ax3.legend(loc='best',fontsize=30)
+            plt.show()

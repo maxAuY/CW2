@@ -24,7 +24,7 @@ from p1.low_level_actions import LowLevelActionType
 from p1.low_level_policy_drawer import LowLevelPolicyDrawer
 
 if __name__ == '__main__':
-    airport_map, drawer_height = test_3x3_scenario()
+    airport_map, drawer_height = test_two_row_scenario()
 
     # Show the scenario        
     airport_map_drawer = AirportMapDrawer(airport_map, drawer_height)
@@ -32,6 +32,7 @@ if __name__ == '__main__':
     
     # Create the environment
     env = LowLevelEnvironment(airport_map)
+    env.set_nominal_direction_probability(1)
 
     # Extract the initial policy. This is e-greedy
     pi = env.initial_policy()

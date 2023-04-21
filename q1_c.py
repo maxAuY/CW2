@@ -80,10 +80,10 @@ if __name__ == '__main__':
         mc_drawers[i].save_screenshot(f"mc-off-{int(epsilon_b_values[i]*10):03}-pe.pdf")
 
 
-    def list_values(predictor):
+    def list_values(predictor,airport_map):
         all_values = []
-        for y in range(3):
-                for x in range(15):
+        for y in range(airport_map._height):
+                for x in range(airport_map._width):
                     value = predictor._v._values[x,y]
                     if not np.isnan(value): 
                         if not value == 0:
@@ -92,9 +92,9 @@ if __name__ == '__main__':
     
     fig,ax = plt.subplots()
     plot = {}
-    plot['truth'] = list_values(pe)
+    plot['truth'] = list_values(pe,airport_map)
     for i in range(num_values):
-        values = list_values(mc_predictors[i])
+        values = list_values(mc_predictors[i],airport_map)
         plot[epsilon_b_values[i]] = values
 
     width = 1/(2+num_values)

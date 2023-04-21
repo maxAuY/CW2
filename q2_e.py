@@ -66,7 +66,7 @@ if __name__ == '__main__':
         pi.set_epsilon(1/math.sqrt(1+0.25*i))
 
         start_time = time.time() # start timing
-        avg_ep_length = policy_learner.find_policy()
+        avg_ep_length,avg_ep_reward = policy_learner.find_policy()
         end_time = time.time() # stop timing
 
         value_function_drawer.update()

@@ -55,7 +55,7 @@ if __name__ == '__main__':
     value_function_drawer = ValueFunctionDrawer(policy_learner.value_function(), drawer_height)    
     greedy_optimal_policy_drawer = LowLevelPolicyDrawer(policy_learner.policy(), drawer_height)
     
-    for i in range(1000):
+    for i in range(40):
         print(i)
         policy_learner.find_policy()
         value_function_drawer.update()
@@ -75,10 +75,10 @@ if __name__ == '__main__':
 
     v_pe.save_screenshot('q_learning_values_truth.pdf')
 
-    def list_values(predictor):
+    def list_values(predictor,airport_map):
         all_values = []
-        for y in range(7):
-                for x in range(19):
+        for y in range(airport_map._height):
+                for x in range(airport_map._width):
                     value = predictor._v._values[x,y]
                     if not np.isnan(value): 
                         if not value == 0:
@@ -87,8 +87,8 @@ if __name__ == '__main__':
     
     fig,ax = plt.subplots()
     plot = {}
-    plot['truth'] = list_values(pe)
-    plot['Q-learning'] = list_values(policy_learner)
+    plot['truth'] = list_values(pe,airport_map)
+    plot['Q-learning'] = list_values(policy_learner,airport_map)
 
     width = 1/3    
     bar = 0
@@ -98,9 +98,9 @@ if __name__ == '__main__':
         ax.bar(ind+width*bar,data,width,label=learner)
         bar += 1
 
-    ax.set_ylabel('Value',fontsize = 25)
+    ax.set_ylabel('Value',fontsize=25)
     ax.set_xlabel('Cell',fontsize=25)
-    ax.set_title('Value Functions',fontsize = 30)
+    ax.set_title('Value Functions',fontsize=30)
 
     plt.yticks(fontsize=20)
     plt.xticks(fontsize=20)
